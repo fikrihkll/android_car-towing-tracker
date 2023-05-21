@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -35,6 +36,7 @@ import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -75,7 +77,7 @@ import com.dagger.parceltrackingui.ui.home.components.LargeIconButton
 @Composable
 fun HomeScreen() {
     var selectedTab by rememberSaveable {
-        mutableStateOf("All")
+        mutableStateOf("Current")
     }
 
     Scaffold { padding ->
@@ -87,7 +89,7 @@ fun HomeScreen() {
             item {
                 BigAppBar(
                     onSearchClicked = {
-                        selectedTab = if (selectedTab == "All") "Sent Packages" else "All"
+
                     }
                 )
             }
@@ -95,7 +97,7 @@ fun HomeScreen() {
                 Column {
                     HomeParcelListTabBar(
                         selectedTab,
-                        listOf("All", "Sent Packages", "Delivering"),
+                        listOf("Current", "History", "All"),
                         onTabClick = {
                             selectedTab = it
                         }
@@ -225,10 +227,16 @@ fun BigAppBar(modifier: Modifier = Modifier, onSearchClicked: (String) -> Unit,)
             Text("Welcome, Miguel",
                 style = MaterialTheme.typography.titleMedium,
             )
-            Text(
-                "Find your package",
-                color = Color.DarkGray
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(imageVector = Icons.Rounded.LocationOn, contentDescription = "Current location")
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    "Boston, US",
+                    color = Color.DarkGray
+                )
+            }
             Spacer(modifier = Modifier.height(16.dp))
             SearchEditText(onSearchClicked = onSearchClicked)
             Spacer(modifier = Modifier.height(16.dp))
@@ -255,7 +263,7 @@ fun SearchEditText(
             TextField(
                 value = "",
                 onValueChange = {},
-                placeholder = { Text("Your parcel ID") },
+                placeholder = { Text("Find destination city") },
                 colors = TextFieldDefaults.textFieldColors(
                     textColor = Color.Gray,
                     disabledTextColor = Color.Transparent,
