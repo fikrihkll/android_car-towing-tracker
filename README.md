@@ -1,4 +1,4 @@
-# Car Towing Tracker App with Jetpack Compose
+# Parcel Tracker App with Jetpack Compose
 
 Original UI design by [Daria Kravets for Purrweb UI/UX Agency](https://dribbble.com/shots/20010607-Parcel-Tracking-Mobile-IOS-App)
 
