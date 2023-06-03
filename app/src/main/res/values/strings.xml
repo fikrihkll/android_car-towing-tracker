@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">ParcelTrackingUI</string>
+    <string name="title_activity_parcel_detail">ParcelDetailActivity</string>
 </resources>
