@@ -1,16 +1,20 @@
 package com.dagger.parceltrackingui.ui.home
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDp
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.with
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -33,9 +37,12 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.rounded.Search
@@ -58,19 +65,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -78,18 +90,27 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.dagger.parceltrackingui.R
 import com.dagger.parceltrackingui.entity.ServiceEntity
+import com.dagger.parceltrackingui.ui.components.Shimmer
 import com.dagger.parceltrackingui.ui.home.components.LargeIconButton
 import com.dagger.parceltrackingui.ui.home.components.TOP_LEVEL_DESTINATIONS
 import com.dagger.parceltrackingui.ui.theme.ParcelTrackingUITheme
-import com.dagger.parceltrackingui.ui.theme.cBrownLightPastel
+import com.dagger.parceltrackingui.ui.theme.cAccent
 import com.dagger.parceltrackingui.ui.theme.cGreen
-import com.dagger.parceltrackingui.ui.theme.cLightGrayPastel
+import com.dagger.parceltrackingui.ui.theme.cBrownLightPastel
 import com.dagger.parceltrackingui.ui.theme.cMintGreenPastel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen() {
+fun HomeScreen(
+    onNavigateToDetail: (
+        parcelId: String,
+        parcelType: String,
+        enableChat: Boolean
+    ) -> Unit
+) {
+
     var selectedTab by rememberSaveable {
         mutableStateOf("Current")
     }
@@ -103,14 +124,14 @@ fun HomeScreen() {
         content = { padding ->
             LazyColumn(
                 modifier = Modifier
-                    .padding(padding)
-
+                    .padding(padding),
             ) {
                 item {
                     BigAppBar(
                         onSearchClicked = {
 
-                        }
+                        },
+                        onNavigateToDetail = onNavigateToDetail
                     )
                 }
                 item {
@@ -147,7 +168,7 @@ fun HomeScreen() {
                                     color = cBrownLightPastel
                                 ),
                                 ServiceEntity(
-                                    icon = "🫱🏻",
+                                    icon = "✍️",
                                     name = "Sign The Contract",
                                     color = cBrownLightPastel
                                 ),
@@ -265,32 +286,51 @@ fun ParcelListTab(
 }
 
 @Composable
-fun BigAppBar(modifier: Modifier = Modifier, onSearchClicked: (String) -> Unit,) {
+fun BigAppBar(
+    modifier: Modifier = Modifier,
+    onSearchClicked: (String) -> Unit,
+    onNavigateToDetail: (
+        parcelId: String,
+        parcelType: String,
+        enableChat: Boolean
+    ) -> Unit
+) {
     val translationYAnimation = remember {
         Animatable(-250f)
     }
+    var translationYState by rememberSaveable {
+        mutableStateOf(-250f)
+    }
+    val translationYTarget = 0f
+
     val alphaAnimation = remember {
         Animatable(0f)
     }
+    var alphaState by rememberSaveable {
+        mutableStateOf(0f)
+    }
+    val alphaTarget = 1f
 
     LaunchedEffect(Unit) {
         launch {
             translationYAnimation.animateTo(
-                targetValue = 0f,
+                targetValue = translationYTarget,
                 animationSpec = tween(
                     durationMillis = 1300,
                     easing = FastOutSlowInEasing
                 )
             )
+            translationYState = translationYTarget
         }
         launch {
             alphaAnimation.animateTo(
-                targetValue = 1f,
+                targetValue = alphaTarget,
                 animationSpec = tween(
                     durationMillis = 900,
                     easing = FastOutSlowInEasing
                 )
             )
+            alphaState = alphaTarget
         }
     }
 
@@ -302,13 +342,24 @@ fun BigAppBar(modifier: Modifier = Modifier, onSearchClicked: (String) -> Unit,)
             bottomStart = 32.dp
         ),
         modifier = modifier,
-        color = MaterialTheme.colorScheme.primaryContainer,
+        color = MaterialTheme.colorScheme.primary,
     ) {
         Column(
             modifier = Modifier
                 .padding(horizontal = 16.dp, vertical = 16.dp)
-                .offset(x = 0.dp, y = translationYAnimation.value.dp)
-                .alpha(alphaAnimation.value)
+                .run {
+                    if (translationYState == translationYTarget)
+                        this.offset(x = 0.dp, y = translationYState.dp)
+                    else
+                        this.offset(x = 0.dp, y = translationYAnimation.value.dp)
+                }
+                .run {
+                    if (alphaState == alphaTarget)
+                        this.alpha(alphaTarget)
+                    else
+                        this.alpha(alphaAnimation.value)
+
+                }
         ) {
             Row(
                 modifier = Modifier
@@ -340,27 +391,47 @@ fun BigAppBar(modifier: Modifier = Modifier, onSearchClicked: (String) -> Unit,)
             )
             Text(
                 "Find your package",
-                color = Color.DarkGray
+                color = Color.LightGray
             )
             Spacer(modifier = Modifier.height(16.dp))
-            SearchEditText(onSearchClicked = onSearchClicked)
+            SearchEditText(
+                onSearchClicked = onSearchClicked,
+                onNavigateToDetail = onNavigateToDetail
+            )
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class,
+    ExperimentalComposeUiApi::class
+)
 @Composable
 fun SearchEditText(
     onSearchClicked: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onNavigateToDetail: (
+        parcelId: String,
+        parcelType: String,
+        enableChat: Boolean
+    ) -> Unit
 ) {
-    var isFocused by remember {
+    var isFocused by rememberSaveable {
         mutableStateOf(false)
     }
-    val xOffset by animateDpAsState(
-        targetValue = if (isFocused) 0.dp else 9999.dp
-    )
+    val focusRequester = remember { FocusRequester() }
+    var trackingNumber by rememberSaveable {
+        mutableStateOf("")
+    }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val localFocusManager = LocalFocusManager.current
+
+    LaunchedEffect(key1 = isFocused) {
+        if (isFocused) {
+            delay(600)
+            focusRequester.requestFocus()
+        }
+    }
 
     Surface(
         modifier = modifier,
@@ -374,20 +445,20 @@ fun SearchEditText(
                 value = "",
                 onValueChange = {},
                 enabled = false,
-                placeholder = { Text("Tracking number") },
+                placeholder = { Text("Tracking number", color = Color.White) },
                 colors = TextFieldDefaults.textFieldColors(
                     textColor = Color.Gray,
                     disabledTextColor = Color.Transparent,
                     focusedIndicatorColor = Color.Gray,
                     unfocusedIndicatorColor = Color.Gray,
                     disabledIndicatorColor = Color.Transparent,
-                    containerColor = Color.Gray
+                    containerColor = MaterialTheme.colorScheme.secondary
                 ),
                 shape = RoundedCornerShape(corner = CornerSize(32.dp)),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
-                        isFocused = !isFocused
+                        isFocused = true
                     }
             )
             AnimatedVisibility(
@@ -403,11 +474,13 @@ fun SearchEditText(
                 ),
             ) {
                 TextField(
-                    value = "",
-                    onValueChange = {},
+                    value = trackingNumber,
+                    onValueChange = {
+                        trackingNumber = it
+                    },
                     placeholder = { Text("Tracking number") },
                     colors = TextFieldDefaults.textFieldColors(
-                        textColor = Color.Gray,
+                        textColor = Color.Black,
                         disabledTextColor = Color.Transparent,
                         focusedIndicatorColor = Color.White,
                         unfocusedIndicatorColor = Color.White,
@@ -415,36 +488,113 @@ fun SearchEditText(
                         containerColor = Color.White
                     ),
                     shape = RoundedCornerShape(corner = CornerSize(32.dp)),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(
+                        onSearch = {
+                            keyboardController?.hide()
+                            localFocusManager.clearFocus()
+                            onNavigateToDetail.invoke(
+                                trackingNumber.ifEmpty { "-1" },
+                                "goods",
+                                true
+                            )
+                        },
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .focusRequester(focusRequester)
                         .zIndex(0.9f)
-                        .clickable {
-                            isFocused = !isFocused
-                        }
                 )
             }
             LargeIconButton(
                 onClick = { onSearchClicked("test") },
+                color = Color.White,
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Search,
                     contentDescription = "",
-                    tint = MaterialTheme.colorScheme.inverseOnSurface
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
         }
     }
 }
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun DeliveringPackageTrackingCard(modifier: Modifier = Modifier) {
+fun DeliveringPackageTrackingCard(
+    modifier: Modifier = Modifier,
+) {
+    val translateXAnimation = remember {
+        Animatable(150f)
+    }
+    var translateXState by rememberSaveable {
+        mutableStateOf(150f)
+    }
+    val translateXTarget = 0f
+
+    val alphaAnimation = remember {
+        Animatable(0f)
+    }
+    var alphaState by rememberSaveable {
+        mutableStateOf(0f)
+    }
+    val alphaTarget = 1f
+
+
+    var isValueLoaded by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    LaunchedEffect(key1 = Unit) {
+        delay(4500)
+        isValueLoaded = true
+    }
+
+    LaunchedEffect(key1 = Unit) {
+        launch {
+            translateXAnimation.animateTo(
+                translateXTarget,
+                animationSpec = tween(
+                    durationMillis = 700,
+                    easing = FastOutSlowInEasing,
+                    delayMillis = 600
+                )
+            )
+            translateXState = translateXTarget
+        }
+        launch {
+            alphaAnimation.animateTo(
+                1f,
+                animationSpec = tween(
+                    durationMillis = 800,
+                    easing = FastOutSlowInEasing,
+                    delayMillis = 600
+                )
+            )
+            alphaState = alphaTarget
+        }
+    }
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        color = MaterialTheme.colorScheme.secondaryContainer,
+            .padding(horizontal = 16.dp)
+            .run {
+                if (alphaState == alphaTarget)
+                    this.alpha(alphaState)
+                else
+                    this.alpha(alphaAnimation.value)
+            }
+            .run {
+                if (translateXState == translateXTarget)
+                    this.offset(x = translateXState.dp, y = 0.dp)
+                else
+                    this.offset(x = translateXAnimation.value.dp, y = 0.dp)
+            },
+        color = MaterialTheme.colorScheme.primaryContainer,
         shape = RoundedCornerShape(size = 24.dp)
     ) {
         Column(
@@ -484,11 +634,17 @@ fun DeliveringPackageTrackingCard(modifier: Modifier = Modifier) {
                             color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.labelSmall
                         )
-                        Text(
-                            "California",
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        AnimatedContent(targetState = isValueLoaded) {
+                            if (it) {
+                                Text(
+                                    "California",
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            } else {
+                                Shimmer.Rectangle()
+                            }
+                        }
                     }
                     Column {
                         Text(
@@ -496,11 +652,24 @@ fun DeliveringPackageTrackingCard(modifier: Modifier = Modifier) {
                             color = MaterialTheme.colorScheme.secondary,
                             style = MaterialTheme.typography.labelSmall
                         )
-                        Text(
-                            "Boston, CA",
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        AnimatedContent(
+                            isValueLoaded,
+                            transitionSpec = {
+                                fadeIn(animationSpec = tween(550, delayMillis = 90)) +
+                                        scaleIn(initialScale = 0.92f, animationSpec = tween(320, delayMillis = 90)) with
+                                        fadeOut(animationSpec = tween(90))
+                            }
+                        ) {
+                            if (it) {
+                                Text(
+                                    "Boston, CA",
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            } else {
+                                Shimmer.Rectangle()
+                            }
+                        }
                     }
                 }
             }
@@ -511,7 +680,7 @@ fun DeliveringPackageTrackingCard(modifier: Modifier = Modifier) {
 @Composable
 fun CirclesWithLine() {
     val primaryColor: Color = MaterialTheme.colorScheme.primary
-    val secondaryColor: Color = MaterialTheme.colorScheme.secondary
+    val tertiaryColor: Color = cAccent
     val textHeight = convertDpToPx(dp = 24.dp)
     val elementHeight = 120.dp
     Box(
@@ -558,7 +727,7 @@ fun CirclesWithLine() {
 
             // Draw the second circle
             drawCircle(
-                color = secondaryColor,
+                color = tertiaryColor,
                 radius = radius,
                 center = circle2Center
             )
@@ -576,7 +745,7 @@ fun convertDpToPx(dp: Dp): Float {
 fun ServicesList(
     servicesList: List<ServiceEntity>
 ) {
-    val listColor = mutableListOf(cBrownLightPastel, cLightGrayPastel, cMintGreenPastel)
+    val listColor = mutableListOf(cBrownLightPastel, MaterialTheme.colorScheme.primaryContainer, cMintGreenPastel)
     servicesList.forEach { entity ->
         entity.color = listColor.first()
         listColor.removeFirst()
@@ -585,8 +754,8 @@ fun ServicesList(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(servicesList) { entity ->
-            ServiceCard(entity = entity)
+        itemsIndexed(servicesList) { index, entity ->
+            ServiceCard(entity = entity, index = index)
         }
     }
 }
@@ -594,11 +763,66 @@ fun ServicesList(
 @Composable
 fun ServiceCard(
     modifier: Modifier = Modifier,
-    entity: ServiceEntity
+    entity: ServiceEntity,
+    index: Int
 ) {
+    val translateXAnimation = remember {
+        Animatable(150f)
+    }
+    var translateXState by rememberSaveable {
+        mutableStateOf(150f)
+    }
+    val translateXTarget = 0f
+
+    val alphaAnimation = remember {
+        Animatable(0f)
+    }
+    var alphaState by rememberSaveable {
+        mutableStateOf(0f)
+    }
+    val alphaTarget = 1f
+
+    LaunchedEffect(key1 = Unit) {
+        delay(600)
+        launch {
+            translateXAnimation.animateTo(
+                translateXTarget,
+                animationSpec = tween(
+                    durationMillis = 700,
+                    easing = FastOutSlowInEasing,
+                    delayMillis = index * 200
+                )
+            )
+            translateXState = translateXTarget
+        }
+        launch {
+            alphaAnimation.animateTo(
+                alphaTarget,
+                animationSpec = tween(
+                    durationMillis = 800,
+                    easing = FastOutSlowInEasing,
+                    delayMillis = index * 200
+                )
+            )
+            alphaState = alphaTarget
+        }
+    }
+
     Surface(
-        modifier = modifier,
-        color = cBrownLightPastel,
+        modifier = modifier
+            .run {
+                if (translateXState == translateXTarget)
+                    this.offset(x = translateXTarget.dp)
+                else
+                    this.offset(x = translateXAnimation.value.dp)
+            }
+            .run {
+                if (alphaState == alphaTarget)
+                    this.alpha(alphaState)
+                else
+                    this.alpha(alphaAnimation.value)
+            },
+        color = entity.color,
         shape = RoundedCornerShape(size = 16.dp)
     ) {
         Row(
@@ -616,10 +840,10 @@ fun ServiceCard(
     }
 }
 
-@Preview
+//@Preview
 @Composable
 fun SearchBarPreview() {
-    SearchEditText(onSearchClicked = {})
+    SearchEditText(onSearchClicked = {}, onNavigateToDetail = {parcelId, parcelType, enableChat ->  })
 }
 
 //@Preview(showBackground = true,)
@@ -640,6 +864,6 @@ fun HomeParcelListPreview() {
 @Composable
 fun HomeScreenPreview() {
     ParcelTrackingUITheme {
-        HomeScreen()
+        HomeScreen(onNavigateToDetail = { parcelId, parcelType, enableChat ->  })
     }
 }
