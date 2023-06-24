@@ -1,14 +1,10 @@
 package com.dagger.parceltrackingui.ui
 
-import android.os.Bundle
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
-import androidx.navigation.NavOptions
-import androidx.navigation.NavOptionsBuilder
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.navOptions
 import com.dagger.parceltrackingui.ui.home.HomeScreen
 import com.dagger.parceltrackingui.ui.parcel_detail.ParcelDetailScreen
 
