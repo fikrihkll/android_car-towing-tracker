@@ -59,6 +59,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -135,16 +136,7 @@ fun HomeScreen(
                     )
                 }
                 item {
-                    Column {
-                        HomeParcelListTabBar(
-                            selectedTab,
-                            listOf("Current", "History", "All"),
-                            onTabClick = {
-                                selectedTab = it
-                            }
-                        )
-                        DeliveringPackageTrackingCard()
-                    }
+                    DeliveryCardSection()
                 }
                 item {
                     Column(
@@ -205,6 +197,23 @@ fun HomeScreen(
             }
         },
     )
+}
+
+@Composable
+fun DeliveryCardSection() {
+    var selectedTab by rememberSaveable {
+        mutableStateOf("Current")
+    }
+    Column {
+        HomeParcelListTabBar(
+            selectedTab,
+            listOf("Current", "History", "All"),
+            onTabClick = {
+                selectedTab = it
+            }
+        )
+        DeliveringPackageTrackingCard()
+    }
 }
 
 @Composable
@@ -403,9 +412,7 @@ fun BigAppBar(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class,
-    ExperimentalComposeUiApi::class
-)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 fun SearchEditText(
     onSearchClicked: (String) -> Unit,
@@ -494,7 +501,7 @@ fun SearchEditText(
                             keyboardController?.hide()
                             localFocusManager.clearFocus()
                             onNavigateToDetail.invoke(
-                                trackingNumber.ifEmpty { "-1" },
+                                trackingNumber.ifEmpty { "882734" },
                                 "goods",
                                 true
                             )
