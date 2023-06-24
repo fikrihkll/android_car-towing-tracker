@@ -67,5 +67,6 @@ val cGreen = Color(0xFF4AC099)
 val cBrownLightPastel = Color(0xFFFEFBEF)
 val cMintGreenPastel = Color(0xFFF0FCF8)
 val cAccent = Color(0xFFFFBB1C)
+val cGray = Color(0xFFAEAFB8)
 
 val seed = Color(0xFF4D6EE7)
