@@ -4,6 +4,8 @@ Original UI design by [Daria Kravets for Purrweb UI/UX Agency](https://dribbble.
 
 ### Preview
 
+https://github.com/fikrihkll/android_parcel-tracker/assets/57880863/9c19acde-3214-46be-b7c8-3e83f1830cf2
 
-https://github.com/fikrihkll/android_car-towing-tracker/assets/57880863/1ca64f23-4235-47a2-8aa7-a5f3d45a1212
+
+
 
