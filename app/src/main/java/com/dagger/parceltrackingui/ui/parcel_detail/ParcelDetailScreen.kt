@@ -361,15 +361,17 @@ fun TrackingActivityView() {
 
 @Composable
 fun ChatView(modifier: Modifier = Modifier) {
-    Column {
+    Column(
+        modifier = modifier
+    ) {
         Surface(
-            shape = RoundedCornerShape(corner = CornerSize(32.dp)),
+            shape = RoundedCornerShape(corner = CornerSize(40.dp)),
             color = MaterialTheme.colorScheme.onBackground,
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
             ) {
 //                Image(painter = painterResource(id = R.drawable.round_chat_24), contentDescription = "Chat Icon")
                 AsyncImage(
